@@ -33,6 +33,13 @@ def _value_columns(table_def: Dict[str, Any]) -> List[Dict[str, Any]]:
     return cols
 
 
+def _convert_token(token: str, col_type: str) -> float:
+    if col_type == "float":
+        return float(token)
+    # 先转 float 再转 int，兼容“0.0”这类
+    return int(float(token))
+
+
 def _fill_one_table(
     numbers: List[str],
     table_key: str,
@@ -68,14 +75,41 @@ def _fill_one_table(
             idx += 1
 
             col_type = col.get("type", "int")
-            if col_type == "float":
-                value = float(token)
-            else:
-                # 先转 float 再转 int，兼容“0.0”这类
-                value = int(float(token))
-            cells[rk][ck] = value
+            cells[rk][ck] = _convert_token(token, col_type)
 
     return cells, remaining
+
+
+def _fill_section3_lenient(
+    numbers: List[str], table_def: Dict[str, Any]
+) -> Tuple[Dict[str, Dict[str, float]], int, bool]:
+    """
+    以更宽松的方式填充第三部分的表格：
+    - 若数字不足，未填充的单元格置为 None，并标记 warning；
+    - 若数字过多，只取需要的数量，亦标记 warning。
+    返回 (cells, used_count, warning)。
+    """
+
+    rows = _data_rows(table_def)
+    cols = _value_columns(table_def)
+    needed = len(rows) * len(cols)
+
+    cells: Dict[str, Dict[str, float]] = {}
+    warning = len(numbers) != needed
+
+    idx = 0
+    for row in rows:
+        rk = row["key"]
+        cells[rk] = {}
+        for col in cols:
+            if idx < len(numbers):
+                token = numbers[idx]
+                cells[rk][col["key"]] = _convert_token(token, col.get("type", "int"))
+                idx += 1
+            else:
+                cells[rk][col["key"]] = None
+
+    return cells, min(idx, needed), warning
 
 
 def parse_section2_tables(raw_text: str) -> Dict[str, Dict[str, Dict[str, float]]]:
@@ -107,9 +141,16 @@ def parse_section3_applications(raw_text: str) -> Dict[str, Dict[str, Dict[str, 
     """
     nums = _extract_numbers(raw_text)
     key = "section3_applications"
-    cells, remaining = _fill_one_table(nums, key)
-    # 对于这一张表，允许尾部有一些无关数字（remaining），先忽略
-    return {key: {"cells": cells}}
+    table_def = TEMPLATE_TABLES[key]
+
+    cells, used, warning = _fill_section3_lenient(nums, table_def)
+    result: Dict[str, Dict[str, Any]] = {key: {"cells": cells}}
+    if warning:
+        result[key]["parse_warning"] = True
+        result[key]["numbers_found"] = len(nums)
+        result[key]["numbers_used"] = used
+
+    return result
 
 
 def parse_section4_review_litigation(raw_text: str) -> Dict[str, Dict[str, Dict[str, float]]]:
