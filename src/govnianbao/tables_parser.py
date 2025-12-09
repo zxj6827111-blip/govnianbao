@@ -143,40 +143,44 @@ def parse_section2_tables(raw_text: str) -> Dict[str, Dict[str, Dict[str, float]
 
 def parse_section3_applications(raw_text: str) -> Dict[str, Dict[str, Dict[str, float]]]:
     """
-    解析第三部分“收到和处理政府信息公开申请情况”整张表。
+    解析第三部分"收到和处理政府信息公开申请情况"整张表。
 
     优先使用标准模板解析（parse_template_table3），
     若模板匹配失败再退回通用的 lenient 解析。
     """
     key = "section3_applications"
-
-    # 1. 先尝试标准模板解析（25 行 × 7 列）
-    template_result = parse_template_table3(raw_text)
-    rows = template_result.get("rows") if isinstance(template_result, dict) else None
-    if rows:
-        cells: Dict[str, Dict[str, float]] = {}
-        for row in rows:
-            row_key = row.get("key")
-            values = row.get("values") or {}
-            if not row_key:
-                continue
-
-            # 将标准模板解析结果转换为浮点数，保持与其他表格一致
-            cells[row_key] = {col_key: float(value) for col_key, value in values.items()}
-
-        return {key: {"cells": cells}}
-
-    # 2. 兜底：旧的 lenient 逻辑（兼容非标准排版）
-    nums = _extract_numbers(raw_text)
     table_def = TEMPLATE_TABLES[key]
+    
+    cells: Dict[str, Dict[str, float]] = {}
+    warnings: List[str] = []
 
-    cells, used, warning = _fill_section3_lenient(nums, table_def)
+    # 1. 优先尝试标准模板解析
+    try:
+        tmpl_result = parse_template_table3(raw_text)
+        cells_from_tmpl = tmpl_result.get("cells") if isinstance(tmpl_result, dict) else None
+        
+        if cells_from_tmpl and isinstance(cells_from_tmpl, dict) and len(cells_from_tmpl) > 0:
+            cells = cells_from_tmpl
+            logger.info(f"parse_section3_applications: successfully parsed {len(cells)} rows using template")
+        else:
+            warnings.append("parse_template_table3 returned empty or invalid cells")
+    except Exception as e:
+        logger.warning(f"parse_template_table3 failed: {e!r}")
+        warnings.append(f"parse_template_table3 failed: {e!r}")
+
+    # 2. 模板解析失败时，再用 lenient 兜底
+    if not cells:
+        logger.info("Falling back to lenient parsing for section3")
+        nums = _extract_numbers(raw_text)
+        cells2, used, warning = _fill_section3_lenient(nums, table_def)
+        cells = cells2 or {}
+        if warning:
+            warnings.append(f"lenient parsing found {len(nums)} numbers, used {used}")
+
     result: Dict[str, Dict[str, Any]] = {key: {"cells": cells}}
-    if warning:
-        result[key]["parse_warning"] = True
-        result[key]["numbers_found"] = len(nums)
-        result[key]["numbers_used"] = used
-
+    if warnings:
+        result[key]["parse_warnings"] = warnings
+    
     return result
 
 
@@ -193,16 +197,20 @@ def parse_section4_review_litigation(raw_text: str) -> Dict[str, Dict[str, Dict[
 
 def parse_template_table3(raw_text: str) -> Dict[str, Any]:
     """
-    解析标准模板的第三张表格（25 行，每行 7 个数字）。
+    解析标准模板的第三张表格（支持多种格式）。
+
+    支持的格式：
+    1. 简化格式：25 行数据 × 7 列（不包含 org_total）= 175 个数字
+    2. 完整格式：28 行数据 × 8 列（包含 org_total）= 224 个数字
 
     流程：
-    1) 预清洗：
-       - 丢弃类似 "- 4 -" 的页码行；
-       - 去掉行首编号前缀（如 "1."、"2、"）。
-    2) 抽取所有整数并校验数量必须为 175（25x7）；
-    3) 按固定行列顺序组装成结构化数据。
+    1) 预清洗：丢弃页码行、去掉行首编号前缀
+    2) 抽取所有整数
+    3) 根据数字数量智能匹配格式
+    4) 按行优先顺序填充 cells
     """
 
+    # 预清洗文本
     cleaned_lines = []
     for line in raw_text.splitlines():
         if _PAGE_NUMBER_PATTERN.match(line):
@@ -211,18 +219,21 @@ def parse_template_table3(raw_text: str) -> Dict[str, Any]:
 
     cleaned_text = "\n".join(cleaned_lines)
     numbers = _TABLE3_NUMBER_PATTERN.findall(cleaned_text)
-
-    # 第三部分表格可能有多种格式：
-    # 格式 1: 25 行 × 7 列 = 175 个数字（不包含 org_total 和 grand_total 列）
-    # 格式 2: 29 行 × 8 列 = 232 个数字（包含所有列和行）
-    # 格式 3: 25 行 × 8 列 = 200 个数字（不包含非数据行，但包含所有列）
-    
     int_numbers = [int(num) for num in numbers]
     num_count = len(int_numbers)
+
+    # 定义支持的格式
+    # 格式 1: 25 行数据 × 7 列（不包含 org_total，不包含标题行）
+    # 格式 2: 28 行数据 × 8 列（包含 org_total，不包含标题行）
     
-    # 根据数字数量判断格式
+    # 获取模板定义的所有数据行（去掉标题行）
+    table_def = TEMPLATE_TABLES["section3_applications"]
+    all_data_rows = _data_rows(table_def)  # 28 行数据行
+    
+    # 判断是哪种格式
     if num_count == 175:  # 格式 1: 25 行 × 7 列
-        rows = [int_numbers[i * 7 : (i + 1) * 7] for i in range(25)]
+        num_rows = 25
+        num_cols = 7
         col_keys = [
             "natural_person",
             "business_corp",
@@ -230,10 +241,13 @@ def parse_template_table3(raw_text: str) -> Dict[str, Any]:
             "social_org",
             "legal_service_org",
             "other_org",
-            "grand_total",  # 最后一列是总计
+            "grand_total",
         ]
-    elif num_count == 200:  # 格式 3: 25 行 × 8 列
-        rows = [int_numbers[i * 8 : (i + 1) * 8] for i in range(25)]
+        # 使用 25 行（去掉标题行 result_this_year_header）
+        row_keys = [row["key"] for row in all_data_rows if row["key"] != "result_this_year_header"]
+    elif num_count == 224:  # 格式 2: 28 行 × 8 列
+        num_rows = 28
+        num_cols = 8
         col_keys = [
             "natural_person",
             "business_corp",
@@ -244,96 +258,40 @@ def parse_template_table3(raw_text: str) -> Dict[str, Any]:
             "org_total",
             "grand_total",
         ]
-    elif num_count == 232:  # 格式 2: 29 行 × 8 列
-        rows = [int_numbers[i * 8 : (i + 1) * 8] for i in range(29)]
-        col_keys = [
-            "natural_person",
-            "business_corp",
-            "research_org",
-            "social_org",
-            "legal_service_org",
-            "other_org",
-            "org_total",
-            "grand_total",
-        ]
+        row_keys = [row["key"] for row in all_data_rows]
     else:
+        # 数字数量不匹配任何标准格式，抛出异常让上层 fallback
         logger.warning(
-            "parse_template_table3 expected 175, 200, or 232 numbers but found %s", 
-            num_count
+            f"parse_template_table3: unexpected number count {num_count}, "
+            f"expected 175 (25x7) or 224 (28x8)"
         )
-        return {}
+        raise ValueError(
+            f"parse_template_table3: got {num_count} numbers, expected 175 or 224"
+        )
 
-    # 使用与模板定义一致的 row_keys（25 或 29 行）
-    # 如果是 29 行，需要包含所有行；如果是 25 行，去掉标题行 result_this_year_header
-    if len(rows) == 29:
-        row_keys = [
-            "new_requests",
-            "carried_over",
-            "result_this_year_header",  # 标题行
-            "result_open",
-            "result_partial",
-            "result_not_public_total",
-            "result_not_public_state_secret",
-            "result_not_public_law_forbid",
-            "result_not_public_security_stability",
-            "result_not_public_third_party",
-            "result_not_public_internal",
-            "result_not_public_process",
-            "result_not_public_case_file",
-            "result_not_public_inquiry",
-            "result_cannot_provide_total",
-            "result_cannot_provide_not_held",
-            "result_cannot_provide_need_create",
-            "result_cannot_provide_unclear",
-            "result_not_processed_total",
-            "result_not_processed_petition",
-            "result_not_processed_duplicate",
-            "result_not_processed_publications",
-            "result_not_processed_frequent",
-            "result_not_processed_confirm_again",
-            "result_other_total",
-            "result_other_overdue_no_rectify",
-            "result_other_no_pay_fee",
-            "result_other_other",
-            "result_total",
-            "carry_next_year",
-        ]
-    else:  # 25 行
-        row_keys = [
-            "new_requests",
-            "carried_over",
-            "result_open",
-            "result_partial",
-            "result_not_public_total",
-            "result_not_public_state_secret",
-            "result_not_public_law_forbid",
-            "result_not_public_security_stability",
-            "result_not_public_third_party",
-            "result_not_public_internal",
-            "result_not_public_process",
-            "result_not_public_case_file",
-            "result_not_public_inquiry",
-            "result_cannot_provide_total",
-            "result_cannot_provide_not_held",
-            "result_cannot_provide_need_create",
-            "result_cannot_provide_unclear",
-            "result_not_processed_total",
-            "result_not_processed_petition",
-            "result_not_processed_duplicate",
-            "result_not_processed_publications",
-            "result_not_processed_frequent",
-            "result_not_processed_confirm_again",
-            "result_other_total",
-            "result_other_overdue_no_rectify",
-            "result_other_no_pay_fee",
-            "result_other_other",
-            "result_total",
-            "carry_next_year",
-        ]
+    logger.info(
+        f"parse_template_table3: matched format {num_rows}x{num_cols}, "
+        f"found {num_count} numbers"
+    )
 
+    # 按行优先顺序填充 cells
+    cells: Dict[str, Dict[str, float]] = {}
+    idx = 0
+    
+    for i in range(num_rows):
+        row_key = row_keys[i]
+        cells[row_key] = {}
+        
+        for col_key in col_keys:
+            value = int_numbers[idx]
+            cells[row_key][col_key] = float(value)
+            idx += 1
+
+    # 为了兼容旧测试，也返回 rows 格式
     return {
+        "cells": cells,
         "rows": [
-            {"key": row_keys[i], "values": dict(zip(col_keys, row_numbers))}
-            for i, row_numbers in enumerate(rows)
+            {"key": row_key, "values": cells[row_key]}
+            for row_key in row_keys[:num_rows]
         ]
     }
