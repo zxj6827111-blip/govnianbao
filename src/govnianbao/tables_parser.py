@@ -1,11 +1,17 @@
 from __future__ import annotations
 
+import logging
 import re
 from typing import Dict, Any, List, Tuple
 
 from .template_tables import TEMPLATE_TABLES
 
 _NUM_PATTERN = re.compile(r"[-+]?\d+(?:\.\d+)?")
+_PAGE_NUMBER_PATTERN = re.compile(r"^\s*-\s*\d+\s*-\s*$")
+_LEADING_INDEX_PATTERN = re.compile(r"^[ \t]*\d+[\.、]")
+_TABLE3_NUMBER_PATTERN = re.compile(r"\d+")
+
+logger = logging.getLogger(__name__)
 
 def _extract_numbers(raw_text: str) -> List[str]:
     """
@@ -161,3 +167,80 @@ def parse_section4_review_litigation(raw_text: str) -> Dict[str, Dict[str, Dict[
     key = "section4_review_litigation"
     cells, remaining = _fill_one_table(nums, key)
     return {key: {"cells": cells}}
+
+
+def parse_template_table3(raw_text: str) -> Dict[str, Any]:
+    """
+    解析标准模板的第三张表格（25 行，每行 7 个数字）。
+
+    流程：
+    1) 预清洗：
+       - 丢弃类似 "- 4 -" 的页码行；
+       - 去掉行首编号前缀（如 "1."、"2、"）。
+    2) 抽取所有整数并校验数量必须为 175（25x7）；
+    3) 按固定行列顺序组装成结构化数据。
+    """
+
+    cleaned_lines = []
+    for line in raw_text.splitlines():
+        if _PAGE_NUMBER_PATTERN.match(line):
+            continue
+        cleaned_lines.append(_LEADING_INDEX_PATTERN.sub("", line))
+
+    cleaned_text = "\n".join(cleaned_lines)
+    numbers = _TABLE3_NUMBER_PATTERN.findall(cleaned_text)
+
+    expected_numbers = 25 * 7
+    if len(numbers) != expected_numbers:
+        logger.warning(
+            "parse_template_table3 expected %s numbers but found %s", expected_numbers, len(numbers)
+        )
+        return {}
+
+    int_numbers = [int(num) for num in numbers]
+    rows = [int_numbers[i * 7 : (i + 1) * 7] for i in range(25)]
+
+    row_keys = [
+        "new_received",
+        "carry_prev_year",
+        "open_full",
+        "open_partial",
+        "deny_secret",
+        "deny_law_forbid",
+        "deny_security_stability",
+        "deny_third_party",
+        "deny_internal",
+        "deny_process",
+        "deny_case_file",
+        "deny_enquiry",
+        "cannot_provide_not_hold",
+        "cannot_provide_make_new",
+        "cannot_provide_unclear",
+        "no_process_petition",
+        "no_process_duplicate",
+        "no_process_publication",
+        "no_process_mass_requests",
+        "no_process_confirm_or_reissue",
+        "other_overdue_no_correction",
+        "other_overdue_not_pay",
+        "other_other",
+        "total",
+        "carry_next_year",
+    ]
+
+    col_keys = [
+        "natural_person",
+        "business",
+        "research_institute",
+        "social_org",
+        "legal_service",
+        "other_org",
+        "total",
+    ]
+
+    return {
+        "rows": [
+            {"key": row_keys[i], "values": dict(zip(col_keys, row_numbers))}
+            for i, row_numbers in enumerate(rows)
+        ]
+    }
