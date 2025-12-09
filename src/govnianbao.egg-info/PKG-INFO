@@ -1,0 +1,25 @@
+Metadata-Version: 2.4
+Name: govnianbao
+Version: 0.1.0
+Summary: Gov information annual report parser
+Requires-Python: >=3.9
+Description-Content-Type: text/markdown
+
+# govnianbao
+
+政府信息公开年度报告结构化解析的 Python 项目初始化。
+
+## 项目用途
+- 固定 6 个板块的标题和顺序，便于统一分段与渲染。
+- 预置第二～四部分的表格模板（含行列定义与层级信息）。
+- 提供将完整纯文本按标题切分为 6 段的工具函数，方便后续解析。
+
+## 当前实现范围
+- `TEMPLATE_TABLES`：按年度报告模板预定义的表格结构。
+- `AnnualReport` 数据模型：涵盖 6 个板块及表格占位结构。
+- `split_sections` / `extract_section_text`：按标题从纯文本切分获取各板块内容。
+
+## TODO
+- 接入 PDF 抽取、URL 抓取等文本获取模块。
+- 支持 Word / Excel 导出与前端渲染。
+- 增补表格数据校验、勾稽关系检查等功能。

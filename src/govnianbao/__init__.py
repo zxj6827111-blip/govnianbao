@@ -1,13 +1,11 @@
-"""政府信息公开年度报告结构化解析工具包。"""
-
 from .models import AnnualReport
-from .template_tables import SECTION_TITLES, TEMPLATE_TABLES
-from .text_parser import extract_section_text, split_sections
+from .annual_report_parser import (
+    parse_annual_report_text,
+    parse_annual_report_text_to_dict,
+)
 
 __all__ = [
     "AnnualReport",
-    "SECTION_TITLES",
-    "TEMPLATE_TABLES",
-    "extract_section_text",
-    "split_sections",
+    "parse_annual_report_text",
+    "parse_annual_report_text_to_dict",
 ]
