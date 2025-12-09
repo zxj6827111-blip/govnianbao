@@ -144,9 +144,25 @@ def parse_section2_tables(raw_text: str) -> Dict[str, Dict[str, Dict[str, float]
 def parse_section3_applications(raw_text: str) -> Dict[str, Dict[str, Dict[str, float]]]:
     """
     解析第三部分“收到和处理政府信息公开申请情况”整张表。
+
+    优先使用标准模板解析（parse_template_table3），
+    若模板匹配失败再退回通用的 lenient 解析。
     """
-    nums = _extract_numbers(raw_text)
     key = "section3_applications"
+
+    # 1. 先尝试标准模板解析（25 行 × 7 列）
+    template_result = parse_template_table3(raw_text)
+    rows = template_result.get("rows") if isinstance(template_result, dict) else None
+    if rows:
+        cells: Dict[str, Dict[str, float]] = {}
+        for row in rows:
+            rk = row["key"]
+            # row["values"] 已经是 {col_key: value} 结构
+            cells[rk] = dict(row["values"])
+        return {key: {"cells": cells}}
+
+    # 2. 兜底：旧的 lenient 逻辑（兼容非标准排版）
+    nums = _extract_numbers(raw_text)
     table_def = TEMPLATE_TABLES[key]
 
     cells, used, warning = _fill_section3_lenient(nums, table_def)
@@ -157,6 +173,7 @@ def parse_section3_applications(raw_text: str) -> Dict[str, Dict[str, Dict[str, 
         result[key]["numbers_used"] = used
 
     return result
+
 
 
 def parse_section4_review_litigation(raw_text: str) -> Dict[str, Dict[str, Dict[str, float]]]:
