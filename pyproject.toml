@@ -10,7 +10,6 @@ readme = "README.md"
 requires-python = ">=3.9"
 dependencies = [
     "fastapi",
-    "govnianbao @ git+https://github.com/zxj6827111-blip/govnianbao.git@main",
 ]
 
 [tool.setuptools]
