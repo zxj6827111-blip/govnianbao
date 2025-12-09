@@ -156,9 +156,14 @@ def parse_section3_applications(raw_text: str) -> Dict[str, Dict[str, Dict[str, 
     if rows:
         cells: Dict[str, Dict[str, float]] = {}
         for row in rows:
-            rk = row["key"]
-            # row["values"] 已经是 {col_key: value} 结构
-            cells[rk] = dict(row["values"])
+            row_key = row.get("key")
+            values = row.get("values") or {}
+            if not row_key:
+                continue
+
+            # 将标准模板解析结果转换为浮点数，保持与其他表格一致
+            cells[row_key] = {col_key: float(value) for col_key, value in values.items()}
+
         return {key: {"cells": cells}}
 
     # 2. 兜底：旧的 lenient 逻辑（兼容非标准排版）
