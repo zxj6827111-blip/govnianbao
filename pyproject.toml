@@ -8,7 +8,10 @@ version = "0.1.0"
 description = "Gov information annual report parser"
 readme = "README.md"
 requires-python = ">=3.9"
-dependencies = []
+dependencies = [
+    "fastapi",
+    "govnianbao @ git+https://github.com/zxj6827111-blip/govnianbao.git@main",
+]
 
 [tool.setuptools]
 package-dir = {"" = "src"}

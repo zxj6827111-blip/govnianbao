@@ -1,1 +1,3 @@
 # 目前只用标准库，后续如需 PDF/Word 解析再补充
+govnianbao @ git+https://github.com/zxj6827111-blip/govnianbao.git@main
+fastapi
