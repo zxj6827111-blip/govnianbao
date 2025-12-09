@@ -212,53 +212,124 @@ def parse_template_table3(raw_text: str) -> Dict[str, Any]:
     cleaned_text = "\n".join(cleaned_lines)
     numbers = _TABLE3_NUMBER_PATTERN.findall(cleaned_text)
 
-    expected_numbers = 25 * 7
-    if len(numbers) != expected_numbers:
+    # 第三部分表格可能有多种格式：
+    # 格式 1: 25 行 × 7 列 = 175 个数字（不包含 org_total 和 grand_total 列）
+    # 格式 2: 29 行 × 8 列 = 232 个数字（包含所有列和行）
+    # 格式 3: 25 行 × 8 列 = 200 个数字（不包含非数据行，但包含所有列）
+    
+    int_numbers = [int(num) for num in numbers]
+    num_count = len(int_numbers)
+    
+    # 根据数字数量判断格式
+    if num_count == 175:  # 格式 1: 25 行 × 7 列
+        rows = [int_numbers[i * 7 : (i + 1) * 7] for i in range(25)]
+        col_keys = [
+            "natural_person",
+            "business_corp",
+            "research_org",
+            "social_org",
+            "legal_service_org",
+            "other_org",
+            "grand_total",  # 最后一列是总计
+        ]
+    elif num_count == 200:  # 格式 3: 25 行 × 8 列
+        rows = [int_numbers[i * 8 : (i + 1) * 8] for i in range(25)]
+        col_keys = [
+            "natural_person",
+            "business_corp",
+            "research_org",
+            "social_org",
+            "legal_service_org",
+            "other_org",
+            "org_total",
+            "grand_total",
+        ]
+    elif num_count == 232:  # 格式 2: 29 行 × 8 列
+        rows = [int_numbers[i * 8 : (i + 1) * 8] for i in range(29)]
+        col_keys = [
+            "natural_person",
+            "business_corp",
+            "research_org",
+            "social_org",
+            "legal_service_org",
+            "other_org",
+            "org_total",
+            "grand_total",
+        ]
+    else:
         logger.warning(
-            "parse_template_table3 expected %s numbers but found %s", expected_numbers, len(numbers)
+            "parse_template_table3 expected 175, 200, or 232 numbers but found %s", 
+            num_count
         )
         return {}
 
-    int_numbers = [int(num) for num in numbers]
-    rows = [int_numbers[i * 7 : (i + 1) * 7] for i in range(25)]
-
-    row_keys = [
-        "new_received",
-        "carry_prev_year",
-        "open_full",
-        "open_partial",
-        "deny_secret",
-        "deny_law_forbid",
-        "deny_security_stability",
-        "deny_third_party",
-        "deny_internal",
-        "deny_process",
-        "deny_case_file",
-        "deny_enquiry",
-        "cannot_provide_not_hold",
-        "cannot_provide_make_new",
-        "cannot_provide_unclear",
-        "no_process_petition",
-        "no_process_duplicate",
-        "no_process_publication",
-        "no_process_mass_requests",
-        "no_process_confirm_or_reissue",
-        "other_overdue_no_correction",
-        "other_overdue_not_pay",
-        "other_other",
-        "total",
-        "carry_next_year",
-    ]
-
-    col_keys = [
-        "natural_person",
-        "business",
-        "research_institute",
-        "social_org",
-        "legal_service",
-        "other_org",
-        "total",
-    ]
+    # 使用与模板定义一致的 row_keys（25 或 29 行）
+    # 如果是 29 行，需要包含所有行；如果是 25 行，去掉标题行 result_this_year_header
+    if len(rows) == 29:
+        row_keys = [
+            "new_requests",
+            "carried_over",
+            "result_this_year_header",  # 标题行
+            "result_open",
+            "result_partial",
+            "result_not_public_total",
+            "result_not_public_state_secret",
+            "result_not_public_law_forbid",
+            "result_not_public_security_stability",
+            "result_not_public_third_party",
+            "result_not_public_internal",
+            "result_not_public_process",
+            "result_not_public_case_file",
+            "result_not_public_inquiry",
+            "result_cannot_provide_total",
+            "result_cannot_provide_not_held",
+            "result_cannot_provide_need_create",
+            "result_cannot_provide_unclear",
+            "result_not_processed_total",
+            "result_not_processed_petition",
+            "result_not_processed_duplicate",
+            "result_not_processed_publications",
+            "result_not_processed_frequent",
+            "result_not_processed_confirm_again",
+            "result_other_total",
+            "result_other_overdue_no_rectify",
+            "result_other_no_pay_fee",
+            "result_other_other",
+            "result_total",
+            "carry_next_year",
+        ]
+    else:  # 25 行
+        row_keys = [
+            "new_requests",
+            "carried_over",
+            "result_open",
+            "result_partial",
+            "result_not_public_total",
+            "result_not_public_state_secret",
+            "result_not_public_law_forbid",
+            "result_not_public_security_stability",
+            "result_not_public_third_party",
+            "result_not_public_internal",
+            "result_not_public_process",
+            "result_not_public_case_file",
+            "result_not_public_inquiry",
+            "result_cannot_provide_total",
+            "result_cannot_provide_not_held",
+            "result_cannot_provide_need_create",
+            "result_cannot_provide_unclear",
+            "result_not_processed_total",
+            "result_not_processed_petition",
+            "result_not_processed_duplicate",
+            "result_not_processed_publications",
+            "result_not_processed_frequent",
+            "result_not_processed_confirm_again",
+            "result_other_total",
+            "result_other_overdue_no_rectify",
+            "result_other_no_pay_fee",
+            "result_other_other",
+            "result_total",
+            "carry_next_year",
+        ]
 
     return {
         "rows": [

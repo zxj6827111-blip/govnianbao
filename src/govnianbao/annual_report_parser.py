@@ -51,30 +51,32 @@ def _fill_tables_best_effort(report: AnnualReport) -> None:
     - 若不匹配，则保持原有空表，不抛异常（方便先跑通主流程）。
     将来如果你希望严格校验，可以直接调用 tables_parser 里的函数。
     """
+    import logging
+    logger = logging.getLogger(__name__)
+    
     # 第二部分
     try:
         if report.section2.raw_text.strip():
             parsed = parse_section2_tables(report.section2.raw_text)
             report.section2.tables.update(parsed)
-    except Exception:
-        # TODO: 可以在这里记录日志或错误信息
-        pass
+    except Exception as e:
+        logger.warning(f"解析第二部分表格失败: {e}")
 
     # 第三部分
     try:
         if report.section3.raw_text.strip():
             parsed = parse_section3_applications(report.section3.raw_text)
             report.section3.tables.update(parsed)
-    except Exception:
-        pass
+    except Exception as e:
+        logger.warning(f"解析第三部分表格失败: {e}")
 
     # 第四部分
     try:
         if report.section4.raw_text.strip():
             parsed = parse_section4_review_litigation(report.section4.raw_text)
             report.section4.tables.update(parsed)
-    except Exception:
-        pass
+    except Exception as e:
+        logger.warning(f"解析第四部分表格失败: {e}")
 
 
 def parse_annual_report_text_to_dict(

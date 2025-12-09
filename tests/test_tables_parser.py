@@ -28,7 +28,7 @@ def test_parse_section3_applications_prefers_template():
 
     # 每一行都包含关键列，且为浮点数
     for row_values in cells.values():
-        for key in ("natural_person", "business", "total"):
+        for key in ("natural_person", "business_corp", "grand_total"):
             assert key in row_values
             assert isinstance(row_values[key], float)
 
