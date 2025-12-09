@@ -6,7 +6,7 @@ from typing import Dict, Any, List, Tuple
 
 from .template_tables import TEMPLATE_TABLES
 
-_NUM_PATTERN = re.compile(r"[-+]?\d+(?:\.\d+)?")
+_NUM_PATTERN = re.compile(r"[+-]?\d+(?:\.\d+)?")
 _PAGE_NUMBER_PATTERN = re.compile(r"^\s*-\s*\d+\s*-\s*$")
 _LEADING_INDEX_PATTERN = re.compile(r"^[ \t]*\d+[\.、]")
 _TABLE3_NUMBER_PATTERN = re.compile(r"\d+")
