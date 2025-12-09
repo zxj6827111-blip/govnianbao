@@ -16,8 +16,9 @@ def _normalize_text(raw_text: str) -> str:
 def _build_relaxed_pattern(title: str) -> re.Pattern[str]:
     """生成允许标题字符间有空白的正则模式。"""
     escaped_chars = [re.escape(ch) for ch in title.strip()]
-    pattern = r"\s*" + r"\s*".join(escaped_chars)
-    return re.compile(pattern)
+    pattern_body = r"\s*".join(escaped_chars)
+    anchored_pattern = rf"(?:^|\n)\s*{pattern_body}"
+    return re.compile(anchored_pattern, re.MULTILINE)
 
 
 def split_sections(raw_text: str) -> Dict[int, str]:
