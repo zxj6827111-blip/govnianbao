@@ -128,8 +128,18 @@ def parse_section2_tables(raw_text: str) -> Dict[str, Dict[str, Dict[str, float]
 
     假设：PDF/网页转换后的文本中，所有相关数字都是
     按 Word 表格“从上到下、从左到右”的顺序出现的。
+    增强预清洗：移除跨页的页码标记（如 "- 4 -"）
     """
-    nums = _extract_numbers(raw_text)
+    # 【增强预清洗】移除页码标记（跨页时会出现 "- 4 -" 这样的标记）
+    cleaned_lines = []
+    for line in raw_text.splitlines():
+        # 跳过整行页码
+        if _PAGE_NUMBER_PATTERN.match(line):
+            continue
+        cleaned_lines.append(line)
+    
+    cleaned_text = "\n".join(cleaned_lines)
+    nums = _extract_numbers(cleaned_text)
     result: Dict[str, Dict[str, Dict[str, float]]] = {}
 
     order = ["section2_art20_1", "section2_art20_5", "section2_art20_6", "section2_art20_8"]
@@ -197,42 +207,54 @@ def parse_section4_review_litigation(raw_text: str) -> Dict[str, Dict[str, Dict[
 
 def parse_template_table3(raw_text: str) -> Dict[str, Any]:
     """
-    解析标准模板的第三张表格（支持多种格式，包括部分缺失情况）。
+    解析标准模板的第三张表格（支持多种格式）。
+
+    表格层级结构：
+    - 第 1 级（一、二、三、四）：大标题
+    - 第 2 级（（一）、（二）、（三）等）：分类标题 ← data=False，不填数值
+    - 第 3 级（1.、2.、3. 等）：最小数据行 ← data=True，填数值
 
     支持的格式：
-    1. 简化格式：N 行数据 × 7 列（不包含 org_total）= N*7 个数字
-    2. 完整格式：N 行数据 × 8 列（包含 org_total）= N*8 个数字
-    3. 部分缺失格式：少于 224 但接近 224 的数字（如 192 = 24×8）
-       可能是表格末尾某些行缺失
+    1. 标准格式：25 行最小级数据 × 7 列 = 175 个数字
+       （即第 3 级的行：new_requests、carried_over、result_open、result_partial、
+        8个不予公开子项、3个无法提供子项、5个不予处理子项、3个其他处理子项、result_total、carry_next_year）
+    2. 完整格式：25 行最小级数据 × 8 列（包含 org_total）= 200 个数字
 
-    流程：
-    1) 预清洗：丢弃页码行、去掉行首编号前缀
-    2) 抽取所有整数
-    3) 根据数字数量智能匹配格式
-       - 精确匹配 175 或 224
-       - 或推断是哪种列格式（7 或 8）
-       - 对于 8 列格式的部分缺失，尝试补全
-    4) 按行优先顺序填充 cells，缺失部分留 None
+    关键点：
+    - PDF 中不存在第 2 级的分类标题行（（三）、（四）、（五）、（六））的数据
+    - 这些分类标题行在模板中 data=False，不应该填数值
+    - 只提取 data=True 的行，即第 1 级和第 3 级的行
     """
 
-    # 预清洗文本
+    # 【增强预清洗】移除行内页码（如 -5-）和行序号（如 1.、2、）
     cleaned_lines = []
     for line in raw_text.splitlines():
+        # 整行页码过滤
         if _PAGE_NUMBER_PATTERN.match(line):
             continue
-        cleaned_lines.append(_LEADING_INDEX_PATTERN.sub("", line))
+        
+        # 移除行内的页码片段（如 -5-）
+        line = re.sub(r"-\s*\d+\s*-", " ", line)
+        
+        # 移除行内的小条序号（1.、2、3.等）
+        line = re.sub(r"(?<!\d)([1-9])[\.、]", " ", line)
+        
+        # 移除行首的编号前缀
+        line = _LEADING_INDEX_PATTERN.sub("", line)
+        
+        cleaned_lines.append(line)
 
     cleaned_text = "\n".join(cleaned_lines)
     numbers = _TABLE3_NUMBER_PATTERN.findall(cleaned_text)
     int_numbers = [int(num) for num in numbers]
     num_count = len(int_numbers)
 
-    # 获取模板定义的所有数据行（去掉标题行）
+    # 获取模板定义的所有 data=True 的行（即应该填数值的行）
     table_def = TEMPLATE_TABLES["section3_applications"]
-    all_data_rows = _data_rows(table_def)  # 所有数据行
+    all_data_rows = _data_rows(table_def)
+    row_keys = [row["key"] for row in all_data_rows]
     
     # 定义两种可能的列配置
-    # 格式 1: 7 列（不包含 org_total）
     col_keys_7 = [
         "natural_person",
         "business_corp",
@@ -242,7 +264,6 @@ def parse_template_table3(raw_text: str) -> Dict[str, Any]:
         "other_org",
         "grand_total",
     ]
-    # 格式 2: 8 列（包含 org_total）
     col_keys_8 = [
         "natural_person",
         "business_corp",
@@ -254,95 +275,71 @@ def parse_template_table3(raw_text: str) -> Dict[str, Any]:
         "grand_total",
     ]
     
-    # 尝试匹配格式
-    # 注意：由于 result_this_year_header 是标题行（data=False），all_data_rows 中不包含它
-    all_row_keys = [row["key"] for row in all_data_rows]
+    # 计算期望值
+    expected_count_7 = len(row_keys) * len(col_keys_7)  # 25*7=175
+    expected_count_8 = len(row_keys) * len(col_keys_8)  # 25*8=200
     
-    # 计算动态期望值
-    expected_count_7 = len(all_row_keys) * len(col_keys_7)
-    expected_count_8 = len(all_row_keys) * len(col_keys_8)
-    
-    # 【改进】智能格式推断逻辑
+    # 【智能匹配逻辑】
     col_keys = None
-    row_keys = None
-    is_partial_8col = False  # 标记是否是 8 列的部分缺失情况
     
-    if num_count == expected_count_7:  # 格式 1: 精确匹配 25 行 × 7 列
+    if num_count == expected_count_7:
+        # 25 行 × 7 列数字
         col_keys = col_keys_7
-        row_keys = all_row_keys
-        logger.info(f"parse_template_table3: matched exact 7-column format (25x7=175)")
+        logger.info(f"parse_template_table3: matched 7-column format with 25 data rows (175 numbers)")
     
-    elif num_count == expected_count_8:  # 格式 2: 精确匹配 28 行 × 8 列
+    elif num_count == expected_count_8:
+        # 25 行 × 8 列数字
         col_keys = col_keys_8
-        row_keys = all_row_keys
-        logger.info(f"parse_template_table3: matched exact 8-column format (28x8=224)")
+        logger.info(f"parse_template_table3: matched 8-column format with 25 data rows (200 numbers)")
     
     else:
-        # 【学习机制】如果不是完全匹配，尝试推断格式
-        # 首先检查是否能被 8 整除（8 列格式）
-        if num_count % 8 == 0:
-            inferred_rows = num_count // 8
-            col_keys = col_keys_8
-            
-            # 【关键改进】对于 8 列格式的部分缺失
-            # 如果行数接近 28（比如 24-27 行），认为是表格末尾缺失
-            if inferred_rows >= 20:  # 保守估计，至少 20 行说明是 8 列格式
-                is_partial_8col = True
-                # 使用前 inferred_rows 行，后续的行留 None
-                row_keys = all_row_keys[:inferred_rows]
-                logger.info(
-                    f"parse_template_table3: inferred 8-column partial format with {inferred_rows} rows "
-                    f"(found {num_count} numbers, expected {expected_count_8})"
-                )
-            else:
-                # 行数太少，不认为是 8 列格式的部分缺失
-                col_keys = None
-        
-        # 【备选方案】如果不是 8 列格式，尝试 7 列格式
-        if col_keys is None and num_count % 7 == 0:
-            inferred_rows = num_count // 7
+        # 【推断逻辑】尝试按 7 或 8 列整除
+        if num_count % 7 == 0:
             col_keys = col_keys_7
-            row_keys = all_row_keys[:inferred_rows]
+            inferred_rows = num_count // 7
             logger.info(
                 f"parse_template_table3: inferred 7-column format with {inferred_rows} rows "
                 f"(found {num_count} numbers)"
             )
-        
-        # 【最后方案】如果都不能整除，抛出异常
-        if col_keys is None:
+            # 只取前 inferred_rows 行
+            row_keys = row_keys[:inferred_rows]
+        elif num_count % 8 == 0:
+            col_keys = col_keys_8
+            inferred_rows = num_count // 8
+            logger.info(
+                f"parse_template_table3: inferred 8-column format with {inferred_rows} rows "
+                f"(found {num_count} numbers)"
+            )
+            # 只取前 inferred_rows 行
+            row_keys = row_keys[:inferred_rows]
+        else:
             logger.warning(
                 f"parse_template_table3: unexpected number count {num_count}, "
-                f"expected {expected_count_7} (25x7) or {expected_count_8} (28x8), "
-                f"or a multiple of 7 or 8"
+                f"expected {expected_count_7} (25x7) or {expected_count_8} (25x8)"
             )
             raise ValueError(
                 f"parse_template_table3: got {num_count} numbers, "
-                f"expected {expected_count_7} (25x7) or {expected_count_8} (28x8), "
-                f"or a multiple of 7 or 8"
+                f"expected {expected_count_7} or {expected_count_8}"
             )
 
-    num_rows = len(row_keys)
-    num_cols = len(col_keys)
-    logger.info(
-        f"parse_template_table3: matched format {num_rows}x{num_cols}, "
-        f"found {num_count} numbers{'（部分缺失）' if is_partial_8col else ''}"
-    )
-
-    # 按行优先顺序填充 cells
-    cells: Dict[str, Dict[str, float]] = {}
+    # 【填充 cells】
+    cells: Dict[str, Dict[str, float]] = {rk: {} for rk in row_keys}
     idx = 0
     
-    for i in range(num_rows):
-        row_key = row_keys[i]
-        cells[row_key] = {}
-        
+    # 按行按列填充数字
+    for row_key in row_keys:
         for col_key in col_keys:
-            if idx < len(int_numbers):  # 有数据时填充
+            if idx < len(int_numbers):
                 value = int_numbers[idx]
                 cells[row_key][col_key] = float(value)
                 idx += 1
-            else:  # 数据不足时留 None（用于部分缺失的情况）
+            else:
                 cells[row_key][col_key] = None
+
+    logger.info(
+        f"parse_template_table3: filled {len(row_keys)} rows × {len(col_keys)} cols, "
+        f"{len([v for row in cells.values() for v in row.values() if v])} non-zero values"
+    )
 
     # 为了兼容旧测试，也返回 rows 格式
     return {

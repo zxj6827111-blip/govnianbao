@@ -166,13 +166,13 @@ TEMPLATE_TABLES: Dict[str, Dict[str, Any]] = {
                 "indent": 1,
                 "data": True,
             },
-            # （三）不予公开（总计）
+            # （三）不予公开 8 个分项
             {
                 "key": "result_not_public_total",
                 "label": "（三）不予公开",
                 "group": "三、本年度办理结果",
                 "indent": 1,
-                "data": True,
+                "data": False,
             },
             # （三）不予公开 8 个分项
             {
@@ -237,7 +237,7 @@ TEMPLATE_TABLES: Dict[str, Dict[str, Any]] = {
                 "label": "（四）无法提供",
                 "group": "三、本年度办理结果",
                 "indent": 1,
-                "data": True,
+                "data": False,
             },
             {
                 "key": "result_cannot_provide_not_held",
@@ -266,7 +266,7 @@ TEMPLATE_TABLES: Dict[str, Dict[str, Any]] = {
                 "label": "（五）不予处理",
                 "group": "三、本年度办理结果",
                 "indent": 1,
-                "data": True,
+                "data": False,
             },
             {
                 "key": "result_not_processed_petition",
@@ -309,7 +309,7 @@ TEMPLATE_TABLES: Dict[str, Dict[str, Any]] = {
                 "label": "（六）其他处理",
                 "group": "三、本年度办理结果",
                 "indent": 1,
-                "data": True,
+                "data": False,
             },
             {
                 "key": "result_other_overdue_no_rectify",

@@ -4,6 +4,7 @@ Version: 0.1.0
 Summary: Gov information annual report parser
 Requires-Python: >=3.9
 Description-Content-Type: text/markdown
+Requires-Dist: fastapi
 
 # govnianbao
 

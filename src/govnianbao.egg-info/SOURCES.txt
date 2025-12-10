@@ -1,5 +1,18 @@
 README.md
 pyproject.toml
+src/app/__init__.py
+src/app/main.py
+src/app/api/__init__.py
+src/app/api/routes/__init__.py
+src/app/api/routes/reports.py
+src/app/models/__init__.py
+src/app/models/report.py
+src/app/parse/__init__.py
+src/app/parse/annual_report.py
+src/app/services/__init__.py
+src/app/services/fetch_url.py
+src/app/services/import_pdf.py
+src/app/services/report_repository.py
 src/govnianbao/__init__.py
 src/govnianbao/annual_report_parser.py
 src/govnianbao/models.py
@@ -9,4 +22,7 @@ src/govnianbao/text_parser.py
 src/govnianbao.egg-info/PKG-INFO
 src/govnianbao.egg-info/SOURCES.txt
 src/govnianbao.egg-info/dependency_links.txt
+src/govnianbao.egg-info/requires.txt
 src/govnianbao.egg-info/top_level.txt
+tests/test_annual_report_parser.py
+tests/test_tables_parser.py
