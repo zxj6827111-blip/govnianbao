@@ -1,0 +1,278 @@
+{
+  "sections_title": {
+    "1": "一、总体情况",
+    "2": "二、主动公开政府信息情况",
+    "3": "三、收到和处理政府信息公开申请情况",
+    "4": "四、政府信息公开行政复议、行政诉讼情况",
+    "5": "五、存在的主要问题及改进情况",
+    "6": "六、其他需要报告的事项"
+  },
+  "section1": {
+    "text": "一、总体情况\n这里是总体情况的说明文字。"
+  },
+  "section2": {
+    "raw_text": "二、主动公开政府信息情况\n这里是主动公开政府信息的说明。",
+    "tables": {
+      "section2_art20_1": {
+        "cells": {}
+      },
+      "section2_art20_5": {
+        "cells": {}
+      },
+      "section2_art20_6": {
+        "cells": {}
+      },
+      "section2_art20_8": {
+        "cells": {}
+      }
+    }
+  },
+  "section3": {
+    "raw_text": "三、收到和处理政府信息公开申请情况\n（收到和处理政府信息公开申请情况表）\n以下是表格数据：\n1 2 3 4 5 6 7\n8 9 10 11 12 13 14\n15 16 17 18 19 20 21\n22 23 24 25 26 27 28\n29 30 31 32 33 34 35\n36 37 38 39 40 41 42\n43 44 45 46 47 48 49\n50 51 52 53 54 55 56\n57 58 59 60 61 62 63\n64 65 66 67 68 69 70\n71 72 73 74 75 76 77\n78 79 80 81 82 83 84\n85 86 87 88 89 90 91\n92 93 94 95 96 97 98\n99 100 101 102 103 104 105\n106 107 108 109 110 111 112\n113 114 115 116 117 118 119\n120 121 122 123 124 125 126\n127 128 129 130 131 132 133\n134 135 136 137 138 139 140\n141 142 143 144 145 146 147\n148 149 150 151 152 153 154\n155 156 157 158 159 160 161\n162 163 164 165 166 167 168\n169 170 171 172 173 174 175",
+    "tables": {
+      "section3_applications": {
+        "cells": {
+          "new_requests": {
+            "natural_person": 1.0,
+            "business_corp": 2.0,
+            "research_org": 3.0,
+            "social_org": 4.0,
+            "legal_service_org": 5.0,
+            "other_org": 6.0,
+            "grand_total": 7.0
+          },
+          "carried_over": {
+            "natural_person": 8.0,
+            "business_corp": 9.0,
+            "research_org": 10.0,
+            "social_org": 11.0,
+            "legal_service_org": 12.0,
+            "other_org": 13.0,
+            "grand_total": 14.0
+          },
+          "result_open": {
+            "natural_person": 15.0,
+            "business_corp": 16.0,
+            "research_org": 17.0,
+            "social_org": 18.0,
+            "legal_service_org": 19.0,
+            "other_org": 20.0,
+            "grand_total": 21.0
+          },
+          "result_partial": {
+            "natural_person": 22.0,
+            "business_corp": 23.0,
+            "research_org": 24.0,
+            "social_org": 25.0,
+            "legal_service_org": 26.0,
+            "other_org": 27.0,
+            "grand_total": 28.0
+          },
+          "result_not_public_total": {
+            "natural_person": 29.0,
+            "business_corp": 30.0,
+            "research_org": 31.0,
+            "social_org": 32.0,
+            "legal_service_org": 33.0,
+            "other_org": 34.0,
+            "grand_total": 35.0
+          },
+          "result_not_public_state_secret": {
+            "natural_person": 36.0,
+            "business_corp": 37.0,
+            "research_org": 38.0,
+            "social_org": 39.0,
+            "legal_service_org": 40.0,
+            "other_org": 41.0,
+            "grand_total": 42.0
+          },
+          "result_not_public_law_forbid": {
+            "natural_person": 43.0,
+            "business_corp": 44.0,
+            "research_org": 45.0,
+            "social_org": 46.0,
+            "legal_service_org": 47.0,
+            "other_org": 48.0,
+            "grand_total": 49.0
+          },
+          "result_not_public_security_stability": {
+            "natural_person": 50.0,
+            "business_corp": 51.0,
+            "research_org": 52.0,
+            "social_org": 53.0,
+            "legal_service_org": 54.0,
+            "other_org": 55.0,
+            "grand_total": 56.0
+          },
+          "result_not_public_third_party": {
+            "natural_person": 57.0,
+            "business_corp": 58.0,
+            "research_org": 59.0,
+            "social_org": 60.0,
+            "legal_service_org": 61.0,
+            "other_org": 62.0,
+            "grand_total": 63.0
+          },
+          "result_not_public_internal": {
+            "natural_person": 64.0,
+            "business_corp": 65.0,
+            "research_org": 66.0,
+            "social_org": 67.0,
+            "legal_service_org": 68.0,
+            "other_org": 69.0,
+            "grand_total": 70.0
+          },
+          "result_not_public_process": {
+            "natural_person": 71.0,
+            "business_corp": 72.0,
+            "research_org": 73.0,
+            "social_org": 74.0,
+            "legal_service_org": 75.0,
+            "other_org": 76.0,
+            "grand_total": 77.0
+          },
+          "result_not_public_case_file": {
+            "natural_person": 78.0,
+            "business_corp": 79.0,
+            "research_org": 80.0,
+            "social_org": 81.0,
+            "legal_service_org": 82.0,
+            "other_org": 83.0,
+            "grand_total": 84.0
+          },
+          "result_not_public_inquiry": {
+            "natural_person": 85.0,
+            "business_corp": 86.0,
+            "research_org": 87.0,
+            "social_org": 88.0,
+            "legal_service_org": 89.0,
+            "other_org": 90.0,
+            "grand_total": 91.0
+          },
+          "result_cannot_provide_total": {
+            "natural_person": 92.0,
+            "business_corp": 93.0,
+            "research_org": 94.0,
+            "social_org": 95.0,
+            "legal_service_org": 96.0,
+            "other_org": 97.0,
+            "grand_total": 98.0
+          },
+          "result_cannot_provide_not_held": {
+            "natural_person": 99.0,
+            "business_corp": 100.0,
+            "research_org": 101.0,
+            "social_org": 102.0,
+            "legal_service_org": 103.0,
+            "other_org": 104.0,
+            "grand_total": 105.0
+          },
+          "result_cannot_provide_need_create": {
+            "natural_person": 106.0,
+            "business_corp": 107.0,
+            "research_org": 108.0,
+            "social_org": 109.0,
+            "legal_service_org": 110.0,
+            "other_org": 111.0,
+            "grand_total": 112.0
+          },
+          "result_cannot_provide_unclear": {
+            "natural_person": 113.0,
+            "business_corp": 114.0,
+            "research_org": 115.0,
+            "social_org": 116.0,
+            "legal_service_org": 117.0,
+            "other_org": 118.0,
+            "grand_total": 119.0
+          },
+          "result_not_processed_total": {
+            "natural_person": 120.0,
+            "business_corp": 121.0,
+            "research_org": 122.0,
+            "social_org": 123.0,
+            "legal_service_org": 124.0,
+            "other_org": 125.0,
+            "grand_total": 126.0
+          },
+          "result_not_processed_petition": {
+            "natural_person": 127.0,
+            "business_corp": 128.0,
+            "research_org": 129.0,
+            "social_org": 130.0,
+            "legal_service_org": 131.0,
+            "other_org": 132.0,
+            "grand_total": 133.0
+          },
+          "result_not_processed_duplicate": {
+            "natural_person": 134.0,
+            "business_corp": 135.0,
+            "research_org": 136.0,
+            "social_org": 137.0,
+            "legal_service_org": 138.0,
+            "other_org": 139.0,
+            "grand_total": 140.0
+          },
+          "result_not_processed_publications": {
+            "natural_person": 141.0,
+            "business_corp": 142.0,
+            "research_org": 143.0,
+            "social_org": 144.0,
+            "legal_service_org": 145.0,
+            "other_org": 146.0,
+            "grand_total": 147.0
+          },
+          "result_not_processed_frequent": {
+            "natural_person": 148.0,
+            "business_corp": 149.0,
+            "research_org": 150.0,
+            "social_org": 151.0,
+            "legal_service_org": 152.0,
+            "other_org": 153.0,
+            "grand_total": 154.0
+          },
+          "result_not_processed_confirm_again": {
+            "natural_person": 155.0,
+            "business_corp": 156.0,
+            "research_org": 157.0,
+            "social_org": 158.0,
+            "legal_service_org": 159.0,
+            "other_org": 160.0,
+            "grand_total": 161.0
+          },
+          "result_other_total": {
+            "natural_person": 162.0,
+            "business_corp": 163.0,
+            "research_org": 164.0,
+            "social_org": 165.0,
+            "legal_service_org": 166.0,
+            "other_org": 167.0,
+            "grand_total": 168.0
+          },
+          "result_other_overdue_no_rectify": {
+            "natural_person": 169.0,
+            "business_corp": 170.0,
+            "research_org": 171.0,
+            "social_org": 172.0,
+            "legal_service_org": 173.0,
+            "other_org": 174.0,
+            "grand_total": 175.0
+          }
+        }
+      }
+    }
+  },
+  "section4": {
+    "raw_text": "四、政府信息公开行政复议、行政诉讼情况\n这里是行政复议、行政诉讼的说明。",
+    "tables": {
+      "section4_review_litigation": {
+        "cells": {}
+      }
+    }
+  },
+  "section5": {
+    "text": "五、存在的主要问题及改进情况\n这里是存在的主要问题及改进情况的说明。"
+  },
+  "section6": {
+    "text": "六、其他需要报告的事项\n这里是其他需要报告的事项。"
+  }
+}
