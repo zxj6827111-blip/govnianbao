@@ -200,13 +200,13 @@ def parse_template_table3(raw_text: str) -> Dict[str, Any]:
     解析标准模板的第三张表格（支持多种格式）。
 
     支持的格式：
-    1. 简化格式：25 行数据 × 7 列（不包含 org_total）= 175 个数字
-    2. 完整格式：28 行数据 × 8 列（包含 org_total）= 224 个数字
+    1. 简化格式：N 行数据 × 7 列（不包含 org_total）= N*7 个数字
+    2. 完整格式：N 行数据 × 8 列（包含 org_total）= N*8 个数字
 
     流程：
     1) 预清洗：丢弃页码行、去掉行首编号前缀
     2) 抽取所有整数
-    3) 根据数字数量智能匹配格式
+    3) 根据数字数量智能匹配格式，动态计算 expected_count = len(row_keys) * len(col_keys)
     4) 按行优先顺序填充 cells
     """
 
@@ -222,53 +222,88 @@ def parse_template_table3(raw_text: str) -> Dict[str, Any]:
     int_numbers = [int(num) for num in numbers]
     num_count = len(int_numbers)
 
-    # 定义支持的格式
-    # 格式 1: 25 行数据 × 7 列（不包含 org_total，不包含标题行）
-    # 格式 2: 28 行数据 × 8 列（包含 org_total，不包含标题行）
-    
     # 获取模板定义的所有数据行（去掉标题行）
     table_def = TEMPLATE_TABLES["section3_applications"]
-    all_data_rows = _data_rows(table_def)  # 28 行数据行
+    all_data_rows = _data_rows(table_def)  # 所有数据行
     
-    # 判断是哪种格式
-    if num_count == 175:  # 格式 1: 25 行 × 7 列
-        num_rows = 25
-        num_cols = 7
-        col_keys = [
-            "natural_person",
-            "business_corp",
-            "research_org",
-            "social_org",
-            "legal_service_org",
-            "other_org",
-            "grand_total",
-        ]
-        # 使用 25 行（去掉标题行 result_this_year_header）
-        row_keys = [row["key"] for row in all_data_rows if row["key"] != "result_this_year_header"]
-    elif num_count == 224:  # 格式 2: 28 行 × 8 列
-        num_rows = 28
-        num_cols = 8
-        col_keys = [
-            "natural_person",
-            "business_corp",
-            "research_org",
-            "social_org",
-            "legal_service_org",
-            "other_org",
-            "org_total",
-            "grand_total",
-        ]
-        row_keys = [row["key"] for row in all_data_rows]
+    # 定义两种可能的列配置
+    # 格式 1: 7 列（不包含 org_total）
+    col_keys_7 = [
+        "natural_person",
+        "business_corp",
+        "research_org",
+        "social_org",
+        "legal_service_org",
+        "other_org",
+        "grand_total",
+    ]
+    # 格式 2: 8 列（包含 org_total）
+    col_keys_8 = [
+        "natural_person",
+        "business_corp",
+        "research_org",
+        "social_org",
+        "legal_service_org",
+        "other_org",
+        "org_total",
+        "grand_total",
+    ]
+    
+    # 尝试匹配格式
+    # 注意：由于 result_this_year_header 是标题行（data=False），all_data_rows 中不包含它
+    all_row_keys = [row["key"] for row in all_data_rows]
+    
+    # 计算动态期望值
+    expected_count_7 = len(all_row_keys) * len(col_keys_7)
+    expected_count_8 = len(all_row_keys) * len(col_keys_8)
+    
+    # 根据实际数字数量判断使用哪种格式
+    col_keys = None
+    row_keys = None
+    
+    if num_count == expected_count_7:  # 格式 1: N 行 × 7 列
+        col_keys = col_keys_7
+        row_keys = all_row_keys
+    elif num_count == expected_count_8:  # 格式 2: N 行 × 8 列
+        col_keys = col_keys_8
+        row_keys = all_row_keys
     else:
-        # 数字数量不匹配任何标准格式，抛出异常让上层 fallback
-        logger.warning(
-            f"parse_template_table3: unexpected number count {num_count}, "
-            f"expected 175 (25x7) or 224 (28x8)"
-        )
-        raise ValueError(
-            f"parse_template_table3: got {num_count} numbers, expected 175 or 224"
-        )
+        # 尝试推断是哪种列格式，然后计算应该有多少行
+        # 如果数字数量能被 7 整除，则为 7 列格式
+        # 如果数字数量能被 8 整除，则为 8 列格式
+        if num_count % 7 == 0:
+            col_keys = col_keys_7
+            inferred_rows = num_count // 7
+            # 使用前 inferred_rows 行
+            row_keys = all_row_keys[:inferred_rows]
+            logger.info(
+                f"parse_template_table3: inferred 7-column format with {inferred_rows} rows "
+                f"(found {num_count} numbers)"
+            )
+        elif num_count % 8 == 0:
+            col_keys = col_keys_8
+            inferred_rows = num_count // 8
+            # 使用前 inferred_rows 行
+            row_keys = all_row_keys[:inferred_rows]
+            logger.info(
+                f"parse_template_table3: inferred 8-column format with {inferred_rows} rows "
+                f"(found {num_count} numbers)"
+            )
+        else:
+            # 无法推断，抛出异常让上层 fallback
+            logger.warning(
+                f"parse_template_table3: unexpected number count {num_count}, "
+                f"expected {expected_count_7} ({len(all_row_keys)}x7) or {expected_count_8} ({len(all_row_keys)}x8), "
+                f"or a multiple of 7 or 8"
+            )
+            raise ValueError(
+                f"parse_template_table3: got {num_count} numbers, "
+                f"expected {expected_count_7} ({len(all_row_keys)}x7) or {expected_count_8} ({len(all_row_keys)}x8), "
+                f"or a multiple of 7 or 8"
+            )
 
+    num_rows = len(row_keys)
+    num_cols = len(col_keys)
     logger.info(
         f"parse_template_table3: matched format {num_rows}x{num_cols}, "
         f"found {num_count} numbers"
@@ -292,6 +327,6 @@ def parse_template_table3(raw_text: str) -> Dict[str, Any]:
         "cells": cells,
         "rows": [
             {"key": row_key, "values": cells[row_key]}
-            for row_key in row_keys[:num_rows]
+            for row_key in row_keys
         ]
     }

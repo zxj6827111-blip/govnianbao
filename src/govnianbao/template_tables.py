@@ -190,8 +190,8 @@ TEMPLATE_TABLES: Dict[str, Dict[str, Any]] = {
                 "data": True,
             },
             {
-                "key": "result_not_public_security_stability",
-                "label": "3.危及“三安全一稳定”",
+                "key": "result_not_public_safety",
+                "label": "3.危及\"三安全一稳定\"",
                 "group": "（三）不予公开",
                 "indent": 2,
                 "data": True,
@@ -247,7 +247,7 @@ TEMPLATE_TABLES: Dict[str, Dict[str, Any]] = {
                 "data": True,
             },
             {
-                "key": "result_cannot_provide_need_create",
+                "key": "result_not_provide_no_existing",
                 "label": "2.没有现成信息需要另行制作",
                 "group": "（四）无法提供",
                 "indent": 2,
@@ -283,7 +283,7 @@ TEMPLATE_TABLES: Dict[str, Dict[str, Any]] = {
                 "data": True,
             },
             {
-                "key": "result_not_processed_publications",
+                "key": "result_not_process_publication",
                 "label": "3.要求提供公开出版物",
                 "group": "（五）不予处理",
                 "indent": 2,
